@@ -1,11 +1,11 @@
-import 'dart:async';
-
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:nokha_ride/features/auth/data/auth_repository.dart';
 import 'package:nokha_ride/features/auth/viewmodels/auth_viewmodel.dart';
-import 'package:nokha_ride/main.dart';
+import 'package:nokha_ride/features/auth/views/login_page.dart';
 
 class TestAuthRepository implements AuthRepository {
   @override
@@ -50,18 +50,32 @@ class TestAuthRepository implements AuthRepository {
 }
 
 void main() {
-  testWidgets('Nokha Ride app smoke test', (WidgetTester tester) async {
+  testWidgets('Nokha Ride login page renders', (
+    WidgetTester tester,
+  ) async {
     final authViewModel = AuthViewModel(
       repository: TestAuthRepository(),
     );
 
     await tester.pumpWidget(
-      NokhaRideApp(authViewModel: authViewModel),
+      ChangeNotifierProvider<AuthViewModel>.value(
+        value: authViewModel,
+        child: const MaterialApp(
+          home: LoginPage(),
+        ),
+      ),
     );
 
     await tester.pump();
 
-    expect(find.byType(AuthGate), findsOneWidget);
+    expect(find.byType(LoginPage), findsOneWidget);
+    expect(find.text('Welcome to Nokha Ride'), findsOneWidget);
     expect(find.text('Login'), findsOneWidget);
+    expect(
+      find.text("Don't have an account? Create one"),
+      findsOneWidget,
+    );
+
+    authViewModel.dispose();
   });
 }
