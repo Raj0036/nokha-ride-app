@@ -1,16 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../viewmodels/home_viewmodel.dart';
+import '../../location/viewmodels/location_viewmodel.dart';
 import '../models/vehicle_category.dart';
+import '../viewmodels/home_viewmodel.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => HomeViewModel()..loadCategories(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) => HomeViewModel()..loadCategories(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => LocationViewModel(),
+        ),
+      ],
       child: const _HomePageContent(),
     );
   }
@@ -19,9 +27,37 @@ class HomePage extends StatelessWidget {
 class _HomePageContent extends StatelessWidget {
   const _HomePageContent();
 
+  Future<void> _getPickupLocation(
+    BuildContext context,
+    LocationViewModel locationViewModel,
+  ) async {
+    final success = await locationViewModel.getCurrentLocation();
+
+    if (!context.mounted) {
+      return;
+    }
+
+    if (!success && locationViewModel.errorMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(locationViewModel.errorMessage!),
+        ),
+      );
+    }
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Current location detected successfully.'),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final viewModel = context.watch<HomeViewModel>();
+    final locationViewModel = context.watch<LocationViewModel>();
 
     return Scaffold(
       appBar: AppBar(
@@ -60,17 +96,26 @@ class _HomePageContent extends StatelessWidget {
             _LocationCard(
               icon: Icons.my_location_rounded,
               title: 'Pickup location',
-              subtitle: 'Choose your pickup point',
-              onTap: () {},
+              subtitle: locationViewModel.isLoading
+                  ? 'Getting your current location...'
+                  : locationViewModel.hasLocation
+                      ? 'Current location detected'
+                      : 'Choose your pickup point',
+              onTap: locationViewModel.isLoading
+                  ? null
+                  : () => _getPickupLocation(
+                        context,
+                        locationViewModel,
+                      ),
             ),
 
             const SizedBox(height: 12),
 
-            _LocationCard(
+            const _LocationCard(
               icon: Icons.location_on_outlined,
               title: 'Destination',
               subtitle: 'Where are you going?',
-              onTap: () {},
+              onTap: null,
             ),
 
             const SizedBox(height: 24),
@@ -164,7 +209,7 @@ class _LocationCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   const _LocationCard({
     required this.icon,
