@@ -7,6 +7,7 @@ import 'features/auth/viewmodels/auth_viewmodel.dart';
 import 'features/auth/viewmodels/profile_viewmodel.dart';
 import 'features/auth/views/complete_profile_page.dart';
 import 'features/auth/views/login_page.dart';
+import 'features/home/views/home_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -164,7 +165,7 @@ class _AuthGateState extends State<AuthGate> {
     return ChangeNotifierProvider.value(
       value: _profileViewModel,
       child: _profileViewModel.isProfileComplete
-          ? const AuthenticatedHomePage()
+          ? const HomePage()
           : const CompleteProfilePage(),
     );
   }
@@ -177,55 +178,3 @@ class _AuthGateState extends State<AuthGate> {
   }
 }
 
-class AuthenticatedHomePage extends StatelessWidget {
-  const AuthenticatedHomePage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final authViewModel = context.read<AuthViewModel>();
-    final profile = context.watch<ProfileViewModel>().profile;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Nokha Ride'),
-        actions: [
-          IconButton(
-            onPressed: authViewModel.isLoading
-                ? null
-                : () => authViewModel.signOut(),
-            icon: const Icon(Icons.logout),
-            tooltip: 'Logout',
-          ),
-        ],
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.local_taxi_rounded,
-                size: 72,
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'Welcome, ${profile?.fullName ?? 'Customer'}',
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                profile?.email ?? '',
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
