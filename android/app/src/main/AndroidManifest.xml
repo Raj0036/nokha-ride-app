@@ -1,4 +1,4 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">`r`n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />`r`n    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <application
         android:label="nokha_ride"
         android:name="${applicationName}"
@@ -43,3 +43,4 @@
         </intent>
     </queries>
 </manifest>
+
