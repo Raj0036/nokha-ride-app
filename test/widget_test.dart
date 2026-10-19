@@ -47,6 +47,14 @@ class TestAuthRepository implements AuthRepository {
   }
 
   @override
+  Future<AuthResponse> verifyMsg91WidgetToken({
+    required String phone,
+    required String accessToken,
+  }) {
+    throw UnsupportedError('Not used by this widget test.');
+  }
+
+  @override
   Future<void> signOut() async {
     throw UnsupportedError('Not used by this widget test.');
   }
