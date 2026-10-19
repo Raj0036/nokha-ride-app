@@ -27,4 +27,4 @@ GitHub Actions runs the Deno type-check for the MSG91 hook, Flutter dependency r
 
 ## Existing backend schema
 
-The existing Supabase schema and RLS migration are preserved. The new phone-auth migration is additive and provisions a profile plus the least-privileged `CUSTOMER` role for newly created users. Do not seed fake vehicles or bookings into production.
+The existing Supabase schema, RLS migration, and role-assignment trigger are preserved. An additive migration synchronizes Auth email/phone values into the existing profile row; the existing verified-user trigger remains responsible for assigning the least-privileged `CUSTOMER` role. Do not seed fake vehicles or bookings into production.
