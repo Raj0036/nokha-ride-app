@@ -1,0 +1,41 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Nokha Ride: Get dependencies",
+      "type": "process",
+      "command": "flutter",
+      "args": ["pub", "get"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Nokha Ride: Analyze",
+      "type": "process",
+      "command": "flutter",
+      "args": ["analyze"],
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Nokha Ride: Run tests",
+      "type": "process",
+      "command": "flutter",
+      "args": ["test", "--reporter", "expanded"],
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Nokha Ride: Build QA APK",
+      "type": "process",
+      "command": "flutter",
+      "args": [
+        "build",
+        "apk",
+        "--debug",
+        "--dart-define-from-file=config/production.json"
+      ],
+      "group": "build",
+      "problemMatcher": []
+    }
+  ]
+}
