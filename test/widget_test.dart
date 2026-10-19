@@ -85,7 +85,7 @@ void main() {
     expect(find.text('Welcome to Nokha Ride'), findsOneWidget);
     expect(find.text('Send OTP'), findsOneWidget);
     expect(
-      find.text("Don't have an account? Create one"),
+      find.text('Use existing email login instead'),
       findsOneWidget,
     );
 
