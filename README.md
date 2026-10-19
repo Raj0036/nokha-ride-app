@@ -17,14 +17,14 @@ The publishable/anon key is designed for client use when Row Level Security is c
 
 ## Phone OTP with MSG91
 
-The default login screen uses Supabase Auth phone OTP. Supabase generates/verifies the OTP and the signed Send SMS Auth Hook sends it through MSG91, so a successful verification returns a normal Supabase session. Existing email/password login is retained as a fallback during rollout.
+The default phone login uses the MSG91 OTP Widget. The app sends the widget access token to a server-side Supabase Edge Function, which verifies it with MSG91 and then establishes a normal Supabase Auth session. Existing email/password login remains available. The MSG91 main Auth Key and Supabase service-role key never enter the Flutter app.
 
-Setup instructions, secret names, MSG91 Flow/DLT requirements, hosted Auth Hook configuration, and smoke tests are in [docs/msg91-supabase-setup.md](docs/msg91-supabase-setup.md).
+Configure `MSG91_WIDGET_ID` and the widget token in your ignored local `config/production.json`; keep `MSG91_AUTH_KEY` as a server-side Supabase secret. Setup and verification steps are in [docs/msg91-supabase-setup.md](docs/msg91-supabase-setup.md).
 
 ## CI verification
 
-GitHub Actions runs the Deno type-check for the MSG91 hook, Flutter dependency resolution, Dart analysis, tests, and a debug QA APK build. A passing debug build is not a production-signed release and does not prove live SMS delivery or a live Supabase deployment.
+GitHub Actions runs the Deno type-check for the MSG91 session function, Flutter dependency resolution, Dart analysis, tests, and a debug QA APK build. A passing debug build is not a production-signed release and does not prove live SMS delivery or a live Supabase deployment.
 
 ## Existing backend schema
 
-The existing Supabase schema, RLS migration, and role-assignment trigger are preserved. An additive migration synchronizes Auth email/phone values into the existing profile row; the existing verified-user trigger remains responsible for assigning the least-privileged `CUSTOMER` role. Do not seed fake vehicles or bookings into production.
+The existing Supabase schema, RLS policies, migrations, and role-assignment trigger are preserved. No database migration is required for this widget integration. A new phone user is created only after MSG91 token verification, and the existing verified-user trigger assigns the `CUSTOMER` role. Existing accounts with another login method are not taken over by phone matching.
