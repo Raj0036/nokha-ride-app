@@ -113,6 +113,28 @@ async function findAuthUserByPhone(
   throw new Error("User lookup limit reached");
 }
 
+async function findProfileByPhone(
+  supabaseUrl: string,
+  serviceKey: string,
+  phone: string,
+): Promise<JsonObject | null> {
+  const phoneDigits = digits(phone);
+  const mobile = phoneDigits.startsWith('91') ? phoneDigits.slice(2) : phoneDigits;
+  const variants = ['+' + phoneDigits, phoneDigits, mobile];
+  const filter = 'in.(' + variants.map((value) => '"' + value + '"').join(',') + ')';
+  const query = new URLSearchParams({ select: 'id,phone', phone: filter });
+  const response = await fetch(supabaseUrl + '/rest/v1/profiles?' + query.toString(), {
+    method: 'GET',
+    headers: { apikey: serviceKey, authorization: 'Bearer ' + serviceKey },
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!response.ok) {
+    console.error('Supabase profile lookup failed with HTTP status', response.status);
+    throw new Error('Unable to look up the account');
+  }
+  const rows = await response.json() as JsonObject[];
+  return Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
+}
 async function createOrRotateWidgetUser(
   supabaseUrl: string,
   serviceKey: string,
@@ -143,6 +165,9 @@ async function createOrRotateWidgetUser(
       throw new Error("Unable to prepare the phone session");
     }
   } else {
+    // Do not create a second auth identity if an existing email/password user's profile already uses this number.
+    const existingProfile = await findProfileByPhone(supabaseUrl, serviceKey, phone);
+    if (existingProfile) throw new Error('ACCOUNT_EXISTS_USE_EXISTING_LOGIN');
     const createResponse = await adminRequest(
       supabaseUrl,
       serviceKey,
