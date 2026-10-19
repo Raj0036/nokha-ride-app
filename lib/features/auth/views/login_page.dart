@@ -28,7 +28,7 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  String get _normalizedPhone => '+91' + _phoneController.text.trim();
+  String get _normalizedPhone => '+91${_phoneController.text.trim()}';
 
   Future<void> _phoneLogin() async {
     if (!_formKey.currentState!.validate()) return;
