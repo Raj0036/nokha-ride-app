@@ -34,6 +34,19 @@ class TestAuthRepository implements AuthRepository {
   }
 
   @override
+  Future<void> sendPhoneOtp({required String phone}) async {
+    throw UnsupportedError('Not used by this widget test.');
+  }
+
+  @override
+  Future<AuthResponse> verifyPhoneOtp({
+    required String phone,
+    required String token,
+  }) {
+    throw UnsupportedError('Not used by this widget test.');
+  }
+
+  @override
   Future<void> signOut() async {
     throw UnsupportedError('Not used by this widget test.');
   }
@@ -70,7 +83,7 @@ void main() {
 
     expect(find.byType(LoginPage), findsOneWidget);
     expect(find.text('Welcome to Nokha Ride'), findsOneWidget);
-    expect(find.text('Login'), findsOneWidget);
+    expect(find.text('Send OTP'), findsOneWidget);
     expect(
       find.text("Don't have an account? Create one"),
       findsOneWidget,
