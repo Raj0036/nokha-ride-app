@@ -254,14 +254,18 @@ otp_expiry = 3600
 # content_path = "./supabase/templates/password_changed_notification.html"
 
 [auth.sms]
-# Allow/disallow new user signups via SMS to your project.
-enable_signup = false
-# If enabled, users need to confirm their phone number before signing in.
-enable_confirmations = false
-# Template for sending OTP to users
-template = "Your code is {{ .Code }}"
-# Controls the minimum amount of time that must pass before sending another sms otp.
-max_frequency = "5s"
+# Phone OTP is the primary login method for Nokha Ride.
+enable_signup = true
+# Require OTP verification for new phone accounts.
+enable_confirmations = true
+# Supabase generates and verifies the OTP; the send_sms Auth Hook delivers it via MSG91.
+template = "Your Nokha Ride verification code is {{ .Code }}"
+max_frequency = "30s"
+
+[auth.hook.send_sms]
+enabled = true
+uri = "http://host.docker.internal:54321/functions/v1/send-sms"
+secrets = "env(SEND_SMS_HOOK_SECRETS)"
 
 # Use pre-defined map of phone number to OTP for testing.
 # [auth.sms.test_otp]
@@ -369,6 +373,9 @@ enabled = false
 authorization_url_path = "/oauth/consent"
 # Allow dynamic client registration
 allow_dynamic_registration = false
+
+[functions.send-sms]
+verify_jwt = false
 
 [edge_runtime]
 enabled = true
