@@ -32,6 +32,14 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Check MSG91 Auth Hook
+        run: deno check supabase/functions/send-sms/index.ts
+
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
