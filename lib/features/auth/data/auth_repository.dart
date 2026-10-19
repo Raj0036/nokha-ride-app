@@ -17,6 +17,13 @@ abstract class AuthRepository {
     required String password,
   });
 
+  Future<void> sendPhoneOtp({required String phone});
+
+  Future<AuthResponse> verifyPhoneOtp({
+    required String phone,
+    required String token,
+  });
+
   Future<void> signOut();
 
   Future<void> resendConfirmationEmail(String email);
@@ -64,6 +71,26 @@ class SupabaseAuthRepository implements AuthRepository {
     return _supabase.auth.signInWithPassword(
       email: email.trim(),
       password: password,
+    );
+  }
+
+  @override
+  Future<void> sendPhoneOtp({required String phone}) async {
+    await _supabase.auth.signInWithOtp(
+      phone: phone,
+      shouldCreateUser: true,
+    );
+  }
+
+  @override
+  Future<AuthResponse> verifyPhoneOtp({
+    required String phone,
+    required String token,
+  }) async {
+    return _supabase.auth.verifyOTP(
+      phone: phone,
+      token: token,
+      type: OtpType.sms,
     );
   }
 
