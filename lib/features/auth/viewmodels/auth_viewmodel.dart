@@ -84,6 +84,32 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
+  Future<bool> verifyMsg91WidgetToken({
+    required String phone,
+    required String accessToken,
+  }) async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final response = await _repository.verifyMsg91WidgetToken(
+        phone: phone,
+        accessToken: accessToken,
+      );
+      _user = response.user;
+      notifyListeners();
+      return response.user != null && response.session != null;
+    } on AuthException catch (error) {
+      _setError(_friendlyAuthError(error.message));
+      return false;
+    } catch (_) {
+      _setError('Phone login failed. Please retry or use your existing email login.');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   Future<bool> signUp({
     required String email,
     required String password,
