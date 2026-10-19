@@ -265,7 +265,7 @@ max_frequency = "30s"
 [auth.hook.send_sms]
 enabled = true
 uri = "http://host.docker.internal:54321/functions/v1/send-sms"
-secrets = "env(SEND_SMS_HOOK_SECRETS)"
+secrets = "env(SEND_SMS_HOOK_SECRET)"
 
 # Use pre-defined map of phone number to OTP for testing.
 # [auth.sms.test_otp]
