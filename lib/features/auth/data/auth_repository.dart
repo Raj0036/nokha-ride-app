@@ -24,6 +24,11 @@ abstract class AuthRepository {
     required String token,
   });
 
+  Future<AuthResponse> verifyMsg91WidgetToken({
+    required String phone,
+    required String accessToken,
+  });
+
   Future<void> signOut();
 
   Future<void> resendConfirmationEmail(String email);
@@ -92,6 +97,22 @@ class SupabaseAuthRepository implements AuthRepository {
       token: token,
       type: OtpType.sms,
     );
+  }
+
+  @override
+  Future<AuthResponse> verifyMsg91WidgetToken({
+    required String phone,
+    required String accessToken,
+  }) async {
+    final response = await _supabase.functions.invoke(
+      'msg91-widget-session',
+      body: {'phone': phone, 'accessToken': accessToken},
+    );
+    final payload = response.data;
+    if (payload is! Map || payload['refresh_token'] is! String) {
+      throw AuthException('The phone login service did not return a valid session.');
+    }
+    return _supabase.auth.setSession(payload['refresh_token'] as String);
   }
 
   @override
