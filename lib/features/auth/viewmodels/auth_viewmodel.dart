@@ -9,7 +9,7 @@ class AuthViewModel extends ChangeNotifier {
   final AuthRepository _repository;
 
   AuthViewModel({AuthRepository? repository})
-    : _repository = repository ?? SupabaseAuthRepository();
+      : _repository = repository ?? SupabaseAuthRepository();
 
   StreamSubscription<AuthState>? _authSubscription;
 
@@ -22,8 +22,9 @@ class AuthViewModel extends ChangeNotifier {
   User? get user => _user;
 
   bool get isAuthenticated => _user != null;
-
   bool get isEmailVerified => _user?.emailConfirmedAt != null;
+  bool get isPhoneVerified => _user?.phoneConfirmedAt != null;
+  bool get isIdentityVerified => isEmailVerified || isPhoneVerified;
 
   void initialize() {
     _user = _repository.currentUser;
@@ -36,6 +37,51 @@ class AuthViewModel extends ChangeNotifier {
     );
 
     notifyListeners();
+  }
+
+  Future<bool> sendPhoneOtp({required String phone}) async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      await _repository.sendPhoneOtp(phone: phone);
+      return true;
+    } on AuthException catch (error) {
+      _setError(_friendlyAuthError(error.message));
+      return false;
+    } catch (_) {
+      _setError('OTP could not be sent. Check your connection and try again.');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<bool> verifyPhoneOtp({
+    required String phone,
+    required String token,
+  }) async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final response = await _repository.verifyPhoneOtp(
+        phone: phone,
+        token: token,
+      );
+
+      _user = response.user;
+      notifyListeners();
+      return response.user != null && response.session != null;
+    } on AuthException catch (error) {
+      _setError(_friendlyAuthError(error.message));
+      return false;
+    } catch (_) {
+      _setError('OTP verification failed. Check the code and try again.');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
   }
 
   Future<bool> signUp({
@@ -142,6 +188,17 @@ class AuthViewModel extends ChangeNotifier {
     } finally {
       _setLoading(false);
     }
+  }
+
+  String _friendlyAuthError(String message) {
+    final lower = message.toLowerCase();
+    if (lower.contains('rate limit') || lower.contains('too many')) {
+      return 'Too many OTP attempts. Please wait before trying again.';
+    }
+    if (lower.contains('phone') && lower.contains('disabled')) {
+      return 'Phone login is not enabled for this project yet.';
+    }
+    return message;
   }
 
   void clearError() {
