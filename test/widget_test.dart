@@ -91,7 +91,7 @@ void main() {
 
     expect(find.byType(LoginPage), findsOneWidget);
     expect(find.text('Welcome to Nokha Ride'), findsOneWidget);
-    expect(find.text('Send OTP'), findsOneWidget);
+    expect(find.text('Continue with MSG91 OTP'), findsOneWidget);
     expect(
       find.text('Use existing email login instead'),
       findsOneWidget,
