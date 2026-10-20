@@ -273,6 +273,7 @@ class _OwnerWorkspacePageState extends State<OwnerWorkspacePage> {
             .select('id, name')
             .eq('is_active', true)
             .eq('is_bike', false)
+            .eq('is_passenger_vehicle', true)
             .order('sort_order'),
       ]);
       if (!mounted) return;
