@@ -525,7 +525,7 @@ class _DriverWorkspacePageState extends State<DriverWorkspacePage> {
       setState(() {
         _driver = row;
         _online = row?['online_status'] == true;
-        _assignedRides = List<Map<String, dynamic>>.from(rides as List);
+        _assignedRides = List<Map<String, dynamic>>.from(rides);
         _loading = false;
       });
     } catch (_) {
