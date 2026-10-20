@@ -599,7 +599,7 @@ class _OwnerWorkspacePageState extends State<OwnerWorkspacePage> {
                           icon: const Icon(Icons.calendar_month),
                           label: Text(expiresAt == null
                               ? 'Select expiry date'
-                              : 'Expires \${expiresAt!.day.toString().padLeft(2, '0')}/\${expiresAt!.month.toString().padLeft(2, '0')}/\${expiresAt!.year}'),
+                              : 'Expires ${expiresAt!.day.toString().padLeft(2, '0')}/${expiresAt!.month.toString().padLeft(2, '0')}/${expiresAt!.year}'),
                         ),
                       ],
                       if (formError != null) ...[
@@ -658,7 +658,7 @@ class _OwnerWorkspacePageState extends State<OwnerWorkspacePage> {
         'png' => 'image/png',
         _ => 'application/octet-stream',
       };
-      uploadedPath = '\${user.id}/$vehicleId/\${selectedType!.toLowerCase()}-\${DateTime.now().millisecondsSinceEpoch}.$extension';
+      uploadedPath = '${user.id}/$vehicleId/${selectedType!.toLowerCase()}-${DateTime.now().millisecondsSinceEpoch}.$extension';
       await _supabase.storage.from('vehicle-documents').uploadBinary(
         uploadedPath!,
         file.bytes!,
