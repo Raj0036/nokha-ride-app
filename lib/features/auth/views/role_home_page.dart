@@ -488,6 +488,8 @@ class DriverWorkspacePage extends StatefulWidget {
 class _DriverWorkspacePageState extends State<DriverWorkspacePage> {
   final _supabase = Supabase.instance.client;
   Map<String, dynamic>? _driver;
+  List<Map<String, dynamic>> _assignedRides = const [];
+  bool _online = false;
   bool _loading = true;
   bool _saving = false;
   String? _error;
@@ -510,9 +512,20 @@ class _DriverWorkspacePageState extends State<DriverWorkspacePage> {
           .select('id, license_number, license_expiry, verification_status, online_status, rating_average, completed_rides')
           .eq('profile_id', user.id)
           .maybeSingle();
+      final isApproved =
+          row?['verification_status']?.toString().toUpperCase() == 'APPROVED';
+      final rides = isApproved
+          ? await _supabase
+              .from('bookings')
+              .select('id, booking_number, booking_status, pickup_address, destination_address, scheduled_at, quoted_fare, passenger_count, booking_type, created_at')
+              .eq('driver_id', row!['id'])
+              .order('created_at', ascending: false)
+          : <dynamic>[];
       if (!mounted) return;
       setState(() {
         _driver = row;
+        _online = row?['online_status'] == true;
+        _assignedRides = List<Map<String, dynamic>>.from(rides as List);
         _loading = false;
       });
     } catch (_) {
@@ -521,6 +534,39 @@ class _DriverWorkspacePageState extends State<DriverWorkspacePage> {
         _error = 'Driver profile could not be loaded.';
         _loading = false;
       });
+    }
+  }
+
+  Future<void> _setOnline(bool value) async {
+    final driver = _driver;
+    final user = _supabase.auth.currentUser;
+    if (driver == null ||
+        user == null ||
+        !widget.approved ||
+        driver['verification_status']?.toString().toUpperCase() != 'APPROVED') {
+      return;
+    }
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      await _supabase
+          .from('drivers')
+          .update({'online_status': value})
+          .eq('id', driver['id'])
+          .eq('profile_id', user.id);
+      if (!mounted) return;
+      setState(() => _online = value);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(value ? 'You are now available.' : 'You are now offline.')),
+      );
+    } catch (_) {
+      if (mounted) {
+        setState(() => _error = 'Availability could not be updated. Please retry.');
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
   }
 
@@ -638,9 +684,39 @@ class _DriverWorkspacePageState extends State<DriverWorkspacePage> {
                   subtitle: Text('Licence: ${_driver!['license_number'] ?? 'Not provided'}\nExpiry: ${_driver!['license_expiry'] ?? 'Not provided'}'),
                   isThreeLine: true,
                 )),
-                const Card(child: ListTile(
-                  title: Text('Ride availability'),
-                  subtitle: Text('Online status and ride acceptance remain disabled until the driver profile is approved and assignment features are enabled.'),
+                Card(
+                  child: SwitchListTile(
+                    title: const Text('Available for rides'),
+                    subtitle: Text(_online ? 'You are online' : 'You are offline'),
+                    value: _online,
+                    onChanged: _saving ||
+                            !widget.approved ||
+                            _driver!['verification_status']?.toString().toUpperCase() != 'APPROVED'
+                        ? null
+                        : _setOnline,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text('Assigned rides', style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 8),
+                if (_assignedRides.isEmpty)
+                  const Card(
+                    child: Padding(
+                      padding: EdgeInsets.all(18),
+                      child: Text('No rides are assigned to you yet. Assigned trips will appear here after dispatch.'),
+                    ),
+                  ),
+                ..._assignedRides.map((ride) => Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.route_outlined),
+                    title: Text((ride['booking_number'] ?? 'Ride').toString()),
+                    subtitle: Text(
+                      '${ride['pickup_address'] ?? 'Pickup not available'} → ${ride['destination_address'] ?? 'Destination not available'}\n'
+                      'Status: ${ride['booking_status'] ?? 'Unknown'} • Passengers: ${ride['passenger_count'] ?? '-'}\n'
+                      'Type: ${ride['booking_type'] ?? '-'} • Fare: ₹${ride['quoted_fare'] ?? '-'}',
+                    ),
+                    isThreeLine: true,
+                  ),
                 )),
               ],
             ],
