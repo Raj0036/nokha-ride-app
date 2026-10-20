@@ -314,7 +314,7 @@ class _OwnerWorkspacePageState extends State<OwnerWorkspacePage> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     DropdownButtonFormField<String>(
-                      value: categoryId,
+                      initialValue: categoryId,
                       items: _categories.map((c) => DropdownMenuItem<String>(
                         value: c['id'].toString(),
                         child: Text(c['name'].toString()),
@@ -352,7 +352,7 @@ class _OwnerWorkspacePageState extends State<OwnerWorkspacePage> {
                       },
                     ),
                     DropdownButtonFormField<String>(
-                      value: fuel,
+                      initialValue: fuel,
                       items: const ['Petrol', 'Diesel', 'CNG', 'Electric', 'Hybrid', 'Other']
                           .map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
                       onChanged: (v) => setDialogState(() => fuel = v ?? 'Petrol'),
