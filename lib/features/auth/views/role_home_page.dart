@@ -552,11 +552,16 @@ class _DriverWorkspacePageState extends State<DriverWorkspacePage> {
       _error = null;
     });
     try {
-      await _supabase
+      final updated = await _supabase
           .from('drivers')
           .update({'online_status': value})
           .eq('id', driver['id'])
-          .eq('profile_id', user.id);
+          .eq('profile_id', user.id)
+          .select('id, online_status')
+          .maybeSingle();
+      if (updated == null || updated['online_status'] != value) {
+        throw StateError('Driver availability update was not confirmed by the server.');
+      }
       if (!mounted) return;
       setState(() => _online = value);
       ScaffoldMessenger.of(context).showSnackBar(
