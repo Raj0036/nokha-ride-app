@@ -247,6 +247,7 @@ class _OwnerWorkspacePageState extends State<OwnerWorkspacePage> {
   final _supabase = Supabase.instance.client;
   List<Map<String, dynamic>> _vehicles = const [];
   List<Map<String, dynamic>> _categories = const [];
+  List<Map<String, dynamic>> _models = const [];
   bool _loading = true;
   bool _saving = false;
   bool _approved = false;
@@ -271,16 +272,16 @@ class _OwnerWorkspacePageState extends State<OwnerWorkspacePage> {
             .select('id, registration_number, brand, model, verification_status, availability_status, is_active, vehicle_categories(name, is_bike, is_passenger_vehicle, is_active)')
             .eq('owner_id', user.id)
             .order('created_at', ascending: false),
-        _supabase
-            .from('vehicle_categories')
-            .select('id, name')
-            .eq('is_active', true)
-            .eq('is_bike', false)
-            .eq('is_passenger_vehicle', true)
-            .order('sort_order'),
+        _supabase.functions.invoke('owner-vehicle-catalog'),
       ]);
       final vehicles = List<Map<String, dynamic>>.from(results[0] as List);
-      final categories = List<Map<String, dynamic>>.from(results[1] as List);
+      final catalogResponse = results[1];
+      final catalog = catalogResponse.data;
+      if (catalog is! Map || catalog['categories'] is! List || catalog['models'] is! List) {
+        throw StateError('Owner vehicle catalog response is invalid.');
+      }
+      final categories = List<Map<String, dynamic>>.from(catalog['categories'] as List);
+      final models = List<Map<String, dynamic>>.from(catalog['models'] as List);
       final ownerApproved = vehicles.any((vehicle) {
         final category = vehicle['vehicle_categories'];
         return vehicle['verification_status']?.toString().toUpperCase() == 'APPROVED' &&
@@ -294,6 +295,7 @@ class _OwnerWorkspacePageState extends State<OwnerWorkspacePage> {
       setState(() {
         _vehicles = vehicles;
         _categories = categories;
+        _models = models;
         _approved = ownerApproved;
         _loading = false;
       });
@@ -309,13 +311,17 @@ class _OwnerWorkspacePageState extends State<OwnerWorkspacePage> {
   Future<void> _registerVehicle() async {
     final formKey = GlobalKey<FormState>();
     final registration = TextEditingController();
-    final brand = TextEditingController();
-    final model = TextEditingController();
     final year = TextEditingController();
-    final seats = TextEditingController(text: '4');
-    String? categoryId = _categories.isEmpty ? null : _categories.first['id'].toString();
+    String? categoryId = _models.isEmpty
+        ? null
+        : _models.first['vehicle_category_id'].toString();
+    String? modelId = _models.isEmpty ? null : _models.first['id'].toString();
+    final firstModel = _models.isEmpty
+        ? null
+        : _models.firstWhere((m) => m['id'].toString() == modelId);
+    final seats = TextEditingController(text: (firstModel?['default_seats'] ?? 4).toString());
     String fuel = 'Petrol';
-    bool ac = false;
+    bool ac = firstModel?['default_ac'] == true;
     final saved = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
@@ -331,13 +337,48 @@ class _OwnerWorkspacePageState extends State<OwnerWorkspacePage> {
                   children: [
                     DropdownButtonFormField<String>(
                       initialValue: categoryId,
-                      items: _categories.map((c) => DropdownMenuItem<String>(
-                        value: c['id'].toString(),
-                        child: Text(c['name'].toString()),
-                      )).toList(),
-                      onChanged: (v) => setDialogState(() => categoryId = v),
+                      items: _categories
+                          .where((category) => _models.any((m) =>
+                              m['vehicle_category_id'].toString() == category['id'].toString()))
+                          .map((c) => DropdownMenuItem<String>(
+                                value: c['id'].toString(),
+                                child: Text(c['name'].toString()),
+                              ))
+                          .toList(),
+                      onChanged: (v) => setDialogState(() {
+                        categoryId = v;
+                        final options = _models.where((m) =>
+                            m['vehicle_category_id'].toString() == v).toList();
+                        modelId = options.isEmpty ? null : options.first['id'].toString();
+                        if (options.isNotEmpty) {
+                          seats.text = (options.first['default_seats'] ?? 4).toString();
+                          ac = options.first['default_ac'] == true;
+                        }
+                      }),
                       decoration: const InputDecoration(labelText: 'Vehicle category'),
                       validator: (v) => v == null ? 'Choose a category' : null,
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      initialValue: modelId,
+                      isExpanded: true,
+                      items: _models
+                          .where((m) => m['vehicle_category_id'].toString() == categoryId)
+                          .map((m) => DropdownMenuItem<String>(
+                                value: m['id'].toString(),
+                                child: Text('${m['brand']} ${m['model_name']}${m['variant'] == null ? '' : ' ${m['variant']}'}'),
+                              ))
+                          .toList(),
+                      onChanged: (v) => setDialogState(() {
+                        modelId = v;
+                        final matches = _models.where((m) => m['id'].toString() == v);
+                        if (matches.isNotEmpty) {
+                          seats.text = (matches.first['default_seats'] ?? 4).toString();
+                          ac = matches.first['default_ac'] == true;
+                        }
+                      }),
+                      decoration: const InputDecoration(labelText: 'Vehicle make and model'),
+                      validator: (v) => v == null ? 'Choose a vehicle model' : null,
                     ),
                     TextFormField(
                       controller: registration,
@@ -345,8 +386,6 @@ class _OwnerWorkspacePageState extends State<OwnerWorkspacePage> {
                       decoration: const InputDecoration(labelText: 'Registration number'),
                       validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
                     ),
-                    TextFormField(controller: brand, decoration: const InputDecoration(labelText: 'Brand')),
-                    TextFormField(controller: model, decoration: const InputDecoration(labelText: 'Model')),
                     TextFormField(
                       controller: year,
                       keyboardType: TextInputType.number,
@@ -397,10 +436,8 @@ class _OwnerWorkspacePageState extends State<OwnerWorkspacePage> {
         ),
       ),
     );
-    if (saved != true || categoryId == null) {
+    if (saved != true || categoryId == null || modelId == null) {
       registration.dispose();
-      brand.dispose();
-      model.dispose();
       year.dispose();
       seats.dispose();
       return;
@@ -411,12 +448,15 @@ class _OwnerWorkspacePageState extends State<OwnerWorkspacePage> {
     });
     try {
       final user = _supabase.auth.currentUser!;
+      final selectedModel = _models.firstWhere((m) => m['id'].toString() == modelId);
+      if (selectedModel['vehicle_category_id'].toString() != categoryId) {
+        throw StateError('Selected model does not match the vehicle category.');
+      }
       await _supabase.from('vehicles').insert({
         'owner_id': user.id,
         'category_id': categoryId,
+        'vehicle_model_id': modelId,
         'registration_number': registration.text.trim().toUpperCase(),
-        'brand': brand.text.trim().isEmpty ? null : brand.text.trim(),
-        'model': model.text.trim().isEmpty ? null : model.text.trim(),
         'manufacturing_year': year.text.trim().isEmpty ? null : int.parse(year.text.trim()),
         'seat_capacity': int.parse(seats.text.trim()),
         'fuel_type': fuel,
@@ -431,11 +471,9 @@ class _OwnerWorkspacePageState extends State<OwnerWorkspacePage> {
         );
       }
     } catch (_) {
-      if (mounted) setState(() => _error = 'Vehicle could not be submitted. Check registration number and permissions.');
+      if (mounted) setState(() => _error = 'Vehicle could not be submitted. Check the registration number, selected model, and permissions.');
     } finally {
       registration.dispose();
-      brand.dispose();
-      model.dispose();
       year.dispose();
       seats.dispose();
       if (mounted) setState(() => _saving = false);
