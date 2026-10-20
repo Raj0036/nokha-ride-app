@@ -222,6 +222,53 @@ async function createOrRotateWidgetUser(
   return await loginResponse.json() as JsonObject;
 }
 
+async function ensureVerifiedPhoneUserRole(
+  supabaseUrl: string,
+  serviceKey: string,
+  userId: string,
+): Promise<void> {
+  const query = new URLSearchParams({
+    select: "role",
+    user_id: "eq." + userId,
+  });
+  const lookup = await fetch(supabaseUrl + "/rest/v1/user_roles?" + query.toString(), {
+    method: "GET",
+    headers: {
+      apikey: serviceKey,
+      authorization: "Bearer " + serviceKey,
+    },
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!lookup.ok) {
+    console.error("Phone account role lookup failed with HTTP status", lookup.status);
+    throw new Error("Unable to verify account access");
+  }
+
+  const assignedRoles = await lookup.json() as JsonObject[];
+  // Never modify existing role assignments. Only initialize a verified
+  // MSG91-created identity as CUSTOMER when it has no server-assigned role.
+  if (Array.isArray(assignedRoles) && assignedRoles.length > 0) return;
+
+  const insert = await fetch(
+    supabaseUrl + "/rest/v1/user_roles?on_conflict=user_id%2Crole",
+    {
+      method: "POST",
+      headers: {
+        apikey: serviceKey,
+        authorization: "Bearer " + serviceKey,
+        "content-type": "application/json",
+        prefer: "resolution=ignore-duplicates,return=minimal",
+      },
+      body: JSON.stringify([{ user_id: userId, role: "CUSTOMER" }]),
+      signal: AbortSignal.timeout(8000),
+    },
+  );
+  if (!insert.ok) {
+    console.error("Verified phone account role initialization failed with HTTP status", insert.status);
+    throw new Error("Unable to initialize account access");
+  }
+}
+
 Deno.serve(async (request: Request): Promise<Response> => {
   if (request.method === "OPTIONS") return new Response("ok", { status: 200, headers: corsHeaders });
   if (request.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
@@ -277,7 +324,11 @@ Deno.serve(async (request: Request): Promise<Response> => {
       return jsonResponse({ error: "Supabase did not return a valid user" }, 502);
     }
 
-    // The pre-existing auth trigger creates the profile and assigns CUSTOMER.
+    // The auth trigger creates the profile. Ensure a verified phone-only
+    // identity has a server-assigned CUSTOMER role, without changing any
+    // existing roles or permitting a client-selected role.
+    await ensureVerifiedPhoneUserRole(supabaseUrl, serviceKey, userId);
+
     // Fill the phone field in that existing row without changing the schema.
     const profileResponse = await fetch(
       supabaseUrl + "/rest/v1/profiles?id=eq." + encodeURIComponent(userId),
