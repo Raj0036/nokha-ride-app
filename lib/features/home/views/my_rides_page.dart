@@ -130,6 +130,7 @@ class _MyRidesPageState extends State<MyRidesPage> {
                           final status = ride['booking_status']?.toString() ?? 'UNKNOWN';
                           final id = ride['id'].toString();
                           final fare = ride['final_fare'] ?? ride['quoted_fare'];
+                          final fareAmount = num.tryParse(fare?.toString() ?? '');
                           final canCancel = ['REQUESTED', 'SEARCHING'].contains(status);
                           return Card(
                             child: Padding(
@@ -164,7 +165,7 @@ class _MyRidesPageState extends State<MyRidesPage> {
                                   const SizedBox(width: 6),
                                   Text((ride['passenger_count'] ?? 1).toString() + ' passenger(s)'),
                                   const Spacer(),
-                                  Text(fare == null ? 'Fare pending' : '₹' + num.tryParse(fare.toString())!.toStringAsFixed(2), style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  Text(fareAmount == null ? 'Fare pending' : '₹' + fareAmount.toStringAsFixed(2), style: const TextStyle(fontWeight: FontWeight.bold)),
                                 ]),
                                 if (canCancel) ...[
                                   const SizedBox(height: 8),
