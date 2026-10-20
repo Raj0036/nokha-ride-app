@@ -946,6 +946,76 @@ class _DriverWorkspacePageState extends State<DriverWorkspacePage> {
     }
   }
 
+
+  Future<void> _uploadDriverLicenceDocument() async {
+    final driver = _driver;
+    final user = _supabase.auth.currentUser;
+    if (driver == null || user == null) return;
+
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['pdf', 'jpg', 'jpeg', 'png'],
+      withData: true,
+      allowMultiple: false,
+    );
+    if (result == null || result.files.isEmpty || !mounted) return;
+    final file = result.files.single;
+    if (file.size > 10 * 1024 * 1024 || file.bytes == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Choose a readable PDF or image of 10 MB or smaller.')),
+      );
+      return;
+    }
+
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    String? uploadedPath;
+    try {
+      final extension = (file.extension ?? 'bin').toLowerCase();
+      final contentType = switch (extension) {
+        'pdf' => 'application/pdf',
+        'jpg' || 'jpeg' => 'image/jpeg',
+        'png' => 'image/png',
+        _ => 'application/octet-stream',
+      };
+      uploadedPath = '\${user.id}/\${driver['id']}/DL-\${DateTime.now().millisecondsSinceEpoch}.$extension';
+      await _supabase.storage.from('driver-documents').uploadBinary(
+        uploadedPath,
+        file.bytes!,
+        fileOptions: FileOptions(contentType: contentType, upsert: false),
+      );
+      await _supabase.from('driver_documents').insert({
+        'driver_id': driver['id'],
+        'document_type': 'DL',
+        'document_number': driver['license_number'],
+        'storage_path': uploadedPath,
+        'expires_at': driver['license_expiry'],
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Driving licence uploaded for admin verification.')),
+        );
+      }
+    } catch (error) {
+      if (uploadedPath != null) {
+        try {
+          await _supabase.storage.from('driver-documents').remove([uploadedPath]);
+        } catch (_) {
+          // Preserve the primary upload error.
+        }
+      }
+      if (mounted) {
+        setState(() => _error = error is PostgrestException
+            ? error.message
+            : 'Driving licence upload failed. Check your connection and permissions.');
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
@@ -979,6 +1049,14 @@ class _DriverWorkspacePageState extends State<DriverWorkspacePage> {
                   subtitle: Text('Licence: ${_driver!['license_number'] ?? 'Not provided'}\nExpiry: ${_driver!['license_expiry'] ?? 'Not provided'}'),
                   isThreeLine: true,
                 )),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: _saving ? null : _uploadDriverLicenceDocument,
+                    icon: const Icon(Icons.upload_file_outlined),
+                    label: const Text('Upload driving licence document'),
+                  ),
+                ),
                 Card(
                   child: SwitchListTile(
                     title: const Text('Available for rides'),
