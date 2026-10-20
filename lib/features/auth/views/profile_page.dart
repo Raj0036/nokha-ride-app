@@ -47,7 +47,7 @@ class ProfilePage extends StatelessWidget {
           const SizedBox(height: 16),
           FilledButton.icon(
             onPressed: () async {
-              await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CompleteProfilePage()));
+              await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CompleteProfilePage(popOnSuccess: true)));
               if (context.mounted) await context.read<ProfileViewModel>().loadProfile();
             },
             icon: const Icon(Icons.edit_outlined),
