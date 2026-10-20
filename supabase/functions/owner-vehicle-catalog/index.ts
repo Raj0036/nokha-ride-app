@@ -66,7 +66,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
     }
     const roles = await readJson(roleResponse) as JsonObject[];
     if (!Array.isArray(roles) || !roles.some((row) => row.role === "OWNER")) {
-      return reply({ error: "Only approved owner accounts can view the owner vehicle catalog" }, 403);
+      return reply({ error: "Only owner accounts can view the owner vehicle catalog" }, 403);
     }
 
     const [categoryResponse, modelResponse, requirementResponse] = await Promise.all([
