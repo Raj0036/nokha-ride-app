@@ -51,10 +51,13 @@ class _RoleHomePageState extends State<RoleHomePage> {
       if (roles.contains('OWNER')) {
         final vehicle = await _supabase
             .from('vehicles')
-            .select('id')
+            .select('id, vehicle_categories!inner(is_bike, is_passenger_vehicle, is_active)')
             .eq('owner_id', user.id)
             .eq('verification_status', 'APPROVED')
             .eq('is_active', true)
+            .eq('vehicle_categories.is_bike', false)
+            .eq('vehicle_categories.is_passenger_vehicle', true)
+            .eq('vehicle_categories.is_active', true)
             .limit(1);
         ownerApproved = vehicle.isNotEmpty;
       }
@@ -247,6 +250,7 @@ class _OwnerWorkspacePageState extends State<OwnerWorkspacePage> {
   List<Map<String, dynamic>> _categories = const [];
   bool _loading = true;
   bool _saving = false;
+  bool _approved = false;
   String? _error;
 
   @override
@@ -265,7 +269,7 @@ class _OwnerWorkspacePageState extends State<OwnerWorkspacePage> {
       final results = await Future.wait<dynamic>([
         _supabase
             .from('vehicles')
-            .select('id, registration_number, brand, model, verification_status, availability_status, is_active, vehicle_categories(name)')
+            .select('id, registration_number, brand, model, verification_status, availability_status, is_active, vehicle_categories(name, is_bike, is_passenger_vehicle, is_active)')
             .eq('owner_id', user.id)
             .order('created_at', ascending: false),
         _supabase
@@ -276,10 +280,22 @@ class _OwnerWorkspacePageState extends State<OwnerWorkspacePage> {
             .eq('is_passenger_vehicle', true)
             .order('sort_order'),
       ]);
+      final vehicles = List<Map<String, dynamic>>.from(results[0] as List);
+      final categories = List<Map<String, dynamic>>.from(results[1] as List);
+      final ownerApproved = vehicles.any((vehicle) {
+        final category = vehicle['vehicle_categories'];
+        return vehicle['verification_status']?.toString().toUpperCase() == 'APPROVED' &&
+            vehicle['is_active'] == true &&
+            category is Map &&
+            category['is_bike'] == false &&
+            category['is_passenger_vehicle'] == true &&
+            category['is_active'] == true;
+      });
       if (!mounted) return;
       setState(() {
-        _vehicles = List<Map<String, dynamic>>.from(results[0] as List);
-        _categories = List<Map<String, dynamic>>.from(results[1] as List);
+        _vehicles = vehicles;
+        _categories = categories;
+        _approved = ownerApproved;
         _loading = false;
       });
     } catch (_) {
@@ -446,7 +462,7 @@ class _OwnerWorkspacePageState extends State<OwnerWorkspacePage> {
         : ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              if (!widget.approved)
+              if (!_approved)
                 const Card(
                   child: ListTile(
                     leading: Icon(Icons.pending_actions_outlined),
@@ -491,6 +507,7 @@ class _DriverWorkspacePageState extends State<DriverWorkspacePage> {
   Map<String, dynamic>? _driver;
   List<Map<String, dynamic>> _assignedRides = const [];
   bool _online = false;
+  bool _approved = false;
   bool _loading = true;
   bool _saving = false;
   String? _error;
@@ -525,6 +542,9 @@ class _DriverWorkspacePageState extends State<DriverWorkspacePage> {
       if (!mounted) return;
       setState(() {
         _driver = row;
+        _approved = isApproved &&
+            (row?['license_expiry'] == null ||
+                DateTime.tryParse(row!['license_expiry'].toString())?.isBefore(DateTime.now()) == false);
         _online = row?['online_status'] == true;
         _assignedRides = List<Map<String, dynamic>>.from(rides);
         _loading = false;
@@ -543,7 +563,7 @@ class _DriverWorkspacePageState extends State<DriverWorkspacePage> {
     final user = _supabase.auth.currentUser;
     if (driver == null ||
         user == null ||
-        !widget.approved ||
+        !_approved ||
         driver['verification_status']?.toString().toUpperCase() != 'APPROVED') {
       return;
     }
@@ -685,7 +705,7 @@ class _DriverWorkspacePageState extends State<DriverWorkspacePage> {
                 ),
               ] else ...[
                 Card(child: ListTile(
-                  leading: Icon(widget.approved ? Icons.verified_outlined : Icons.pending_actions_outlined),
+                  leading: Icon(_approved ? Icons.verified_outlined : Icons.pending_actions_outlined),
                   title: Text('Verification: ${_driver!['verification_status']}'),
                   subtitle: Text('Licence: ${_driver!['license_number'] ?? 'Not provided'}\nExpiry: ${_driver!['license_expiry'] ?? 'Not provided'}'),
                   isThreeLine: true,
@@ -696,7 +716,7 @@ class _DriverWorkspacePageState extends State<DriverWorkspacePage> {
                     subtitle: Text(_online ? 'You are online' : 'You are offline'),
                     value: _online,
                     onChanged: _saving ||
-                            !widget.approved ||
+                            !_approved ||
                             _driver!['verification_status']?.toString().toUpperCase() != 'APPROVED'
                         ? null
                         : _setOnline,
