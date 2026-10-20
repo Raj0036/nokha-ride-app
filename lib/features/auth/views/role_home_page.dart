@@ -980,7 +980,7 @@ class _DriverWorkspacePageState extends State<DriverWorkspacePage> {
         'png' => 'image/png',
         _ => 'application/octet-stream',
       };
-      uploadedPath = '\${user.id}/\${driver['id']}/DL-\${DateTime.now().millisecondsSinceEpoch}.$extension';
+      uploadedPath = '${user.id}/${driver['id']}/DL-${DateTime.now().millisecondsSinceEpoch}.$extension';
       await _supabase.storage.from('driver-documents').uploadBinary(
         uploadedPath,
         file.bytes!,
