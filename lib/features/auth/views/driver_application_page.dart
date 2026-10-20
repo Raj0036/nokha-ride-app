@@ -126,6 +126,7 @@ class _DriverApplicationPageState extends State<DriverApplicationPage> {
     );
     if (file == null || !mounted) return;
     final fileLength = await file.length();
+    if (!mounted) return;
     if (fileLength == null || fileLength > 10 * 1024 * 1024) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Choose a readable PDF or image of 10 MB or smaller.')),
