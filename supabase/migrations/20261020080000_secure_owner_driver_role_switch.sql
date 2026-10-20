@@ -60,3 +60,30 @@ revoke all on function public.switch_owner_driver_role(public.user_role) from pu
 revoke all on function public.switch_owner_driver_role(public.user_role) from anon;
 grant execute on function public.switch_owner_driver_role(public.user_role) to authenticated;
 grant execute on function public.switch_owner_driver_role(public.user_role) to service_role;
+
+-- Trigger/event-trigger functions are invoked by PostgreSQL, not as client RPCs.
+-- Remove default API execution grants without changing the triggers themselves.
+do $block$
+declare
+  fn record;
+begin
+  for fn in
+    select p.oid::regprocedure as signature
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public'
+      and p.prosecdef
+      and p.prorettype::regtype::text in ('trigger', 'event_trigger')
+  loop
+    execute format('revoke all on function %s from public, anon, authenticated', fn.signature);
+  end loop;
+end;
+$block$;
+
+-- This operation is user-owned but requires a signed-in session.
+revoke all on function public.cleanup_vehicle_submission(uuid) from public, anon;
+grant execute on function public.cleanup_vehicle_submission(uuid) to authenticated;
+
+-- This bulk maintenance operation is for trusted maintenance only, not client RPC.
+revoke all on function public.process_expired_vehicle_documents() from public, anon, authenticated;
+grant execute on function public.process_expired_vehicle_documents() to service_role;
