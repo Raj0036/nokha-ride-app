@@ -268,6 +268,36 @@ Deno.serve(async (request: Request): Promise<Response> => {
     if (typeof session.access_token !== "string" || typeof session.refresh_token !== "string") {
       return jsonResponse({ error: "Supabase did not return a valid session" }, 502);
     }
+
+    const sessionUser = session.user && typeof session.user === "object"
+      ? session.user as JsonObject
+      : {};
+    const userId = sessionUser.id;
+    if (typeof userId !== "string") {
+      return jsonResponse({ error: "Supabase did not return a valid user" }, 502);
+    }
+
+    // The pre-existing auth trigger creates the profile and assigns CUSTOMER.
+    // Fill the phone field in that existing row without changing the schema.
+    const profileResponse = await fetch(
+      supabaseUrl + "/rest/v1/profiles?id=eq." + encodeURIComponent(userId),
+      {
+        method: "PATCH",
+        headers: {
+          apikey: serviceKey,
+          authorization: "Bearer " + serviceKey,
+          "content-type": "application/json",
+          prefer: "return=minimal",
+        },
+        body: JSON.stringify({ phone: verifiedPhone }),
+        signal: AbortSignal.timeout(8000),
+      },
+    );
+    if (!profileResponse.ok) {
+      console.error("Profile phone synchronization failed with HTTP status", profileResponse.status);
+      return jsonResponse({ error: "Account was verified but profile setup failed. Please retry." }, 500);
+    }
+
     return jsonResponse({
       access_token: session.access_token,
       refresh_token: session.refresh_token,
