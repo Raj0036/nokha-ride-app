@@ -29,7 +29,7 @@ Run/build with the existing VS Code task, which uses `--dart-define-from-file=co
 
 The function is `supabase/functions/msg91-widget-session/index.ts`. It expects the existing server-side secret `MSG91_AUTH_KEY`. Supabase provides `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` to Edge Functions at runtime.
 
-The MSG91 Auth Key was previously stored in the connected project's Supabase secrets. Confirm it is still present; if it needs to be added or rotated, do so through Supabase's secret manager, never in Flutter or source control.
+Add the MSG91 main Auth Key as the Edge Function secret `MSG91_AUTH_KEY` through Supabase's server-side secret manager. This value is not included in this repository and must never be placed in Flutter, `config/production.json`, source control, or chat.
 
 Deploy from the repository root after linking the correct project:
 
