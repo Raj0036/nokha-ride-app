@@ -67,11 +67,21 @@ class _RoleHomePageState extends State<RoleHomePage> {
       if (roles.contains('DRIVER')) {
         final driver = await _supabase
             .from('drivers')
-            .select('id')
+            .select('id, license_expiry')
             .eq('profile_id', user.id)
             .eq('verification_status', 'APPROVED')
             .maybeSingle();
-        driverApproved = driver != null;
+        final expiry = DateTime.tryParse(
+          driver?['license_expiry']?.toString() ?? '',
+        );
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day);
+        final normalizedExpiry = expiry == null
+            ? null
+            : DateTime(expiry.year, expiry.month, expiry.day);
+        driverApproved = driver != null &&
+            normalizedExpiry != null &&
+            !normalizedExpiry.isBefore(today);
       }
 
       if (!mounted) return;
