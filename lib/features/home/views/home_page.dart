@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../auth/views/owner_application_page.dart';
 import '../../auth/views/profile_page.dart';
 import '../../location/viewmodels/location_viewmodel.dart';
 import '../models/vehicle_category.dart';
@@ -154,6 +155,12 @@ class _HomePageContent extends StatelessWidget {
             const SizedBox(height: 28),
             const Text('More services', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
+            _ServiceTile(
+              icon: Icons.directions_car_outlined,
+              title: 'Become a vehicle owner',
+              subtitle: 'Apply to list your car on Nokha Ride',
+              onTap: () => _openPage(context, const OwnerApplicationPage()),
+            ),
             _ServiceTile(
               icon: Icons.route_rounded,
               title: 'Outstation',
