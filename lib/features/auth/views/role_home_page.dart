@@ -514,6 +514,7 @@ class _OwnerWorkspacePageState extends State<OwnerWorkspacePage> {
         .toList();
     String? selectedType = documentTypes.first;
     PlatformFile? selectedFile;
+    List<int>? selectedFileBytes;
     DateTime? expiresAt;
     String? formError;
 
@@ -551,24 +552,20 @@ class _OwnerWorkspacePageState extends State<OwnerWorkspacePage> {
                       const SizedBox(height: 12),
                       OutlinedButton.icon(
                         onPressed: () async {
-                          final result = await FilePicker.platform.pickFiles(
+                          final file = await FilePicker.pickFile(
                             type: FileType.custom,
                             allowedExtensions: const ['pdf', 'jpg', 'jpeg', 'png'],
-                            withData: true,
-                            allowMultiple: false,
                           );
-                          if (result == null || result.files.isEmpty) return;
-                          final file = result.files.single;
-                          if (file.size > 10 * 1024 * 1024) {
-                            setDialogState(() => formError = 'File must be 10 MB or smaller.');
+                          if (file == null) return;
+                          final fileLength = await file.length();
+                          if (fileLength == null || fileLength > 10 * 1024 * 1024) {
+                            setDialogState(() => formError = 'File must be readable and 10 MB or smaller.');
                             return;
                           }
-                          if (file.bytes == null) {
-                            setDialogState(() => formError = 'Could not read the selected file. Try another file.');
-                            return;
-                          }
+                          final bytes = await file.readAsBytes();
                           setDialogState(() {
                             selectedFile = file;
+                            selectedFileBytes = bytes;
                             formError = null;
                           });
                         },
@@ -640,7 +637,7 @@ class _OwnerWorkspacePageState extends State<OwnerWorkspacePage> {
       ),
     );
 
-    if (submitted != true || selectedFile == null || selectedType == null) {
+    if (submitted != true || selectedFile == null || selectedFileBytes == null || selectedType == null) {
       numberController.dispose();
       return;
     }
@@ -662,7 +659,7 @@ class _OwnerWorkspacePageState extends State<OwnerWorkspacePage> {
       uploadedPath = '${user.id}/$vehicleId/${selectedType!.toLowerCase()}-${DateTime.now().millisecondsSinceEpoch}.$extension';
       await _supabase.storage.from('vehicle-documents').uploadBinary(
         uploadedPath!,
-        file.bytes!,
+        selectedFileBytes!,
         fileOptions: FileOptions(contentType: contentType, upsert: false),
       );
       await _supabase.from('vehicle_documents').insert({
