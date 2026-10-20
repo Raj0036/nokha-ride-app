@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../auth/views/driver_application_page.dart';
 import '../../auth/views/owner_application_page.dart';
 import '../../auth/views/profile_page.dart';
 import '../../location/viewmodels/location_viewmodel.dart';
@@ -160,6 +161,12 @@ class _HomePageContent extends StatelessWidget {
               title: 'Become a vehicle owner',
               subtitle: 'Apply to list your car on Nokha Ride',
               onTap: () => _openPage(context, const OwnerApplicationPage()),
+            ),
+            _ServiceTile(
+              icon: Icons.badge_outlined,
+              title: 'Apply as a driver',
+              subtitle: 'Submit your driving licence for verification',
+              onTap: () => _openPage(context, const DriverApplicationPage()),
             ),
             _ServiceTile(
               icon: Icons.route_rounded,
