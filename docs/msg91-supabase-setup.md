@@ -5,9 +5,10 @@ This integration uses the **MSG91 OTP Widget** to send and verify OTPs. The Flut
 ## 1. Configure the MSG91 Widget
 
 1. In the MSG91 dashboard, create or select the OTP Widget.
-2. Enable **Mobile Integration** for a mobile app and configure the channel you intend to use in the widget.
+2. Configure the widget's allowed channel, OTP length, expiry, and resend limits.
 3. Copy the Widget ID and the Widget Auth Token. The Widget Auth Token is not the main MSG91 Auth Key.
-4. Do not put the main MSG91 Auth Key in the app. It must remain a server-side Supabase secret.
+4. This implementation hosts MSG91's Web SDK inside a Flutter WebView, so keep the widget's **Mobile Integration** option disabled. If you enable MSG91 Mobile Integration, replace this WebView bridge with MSG91's native mobile SDK flow instead.
+5. Do not put the main MSG91 Auth Key in the app. It must remain a server-side Supabase secret.
 
 This integration does not set up a separate MSG91 SMS Flow or a Supabase Send SMS Auth Hook. Configure the supported channel in the widget dashboard according to your existing account setup.
 
