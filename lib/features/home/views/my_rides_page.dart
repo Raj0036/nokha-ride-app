@@ -104,7 +104,7 @@ class _MyRidesPageState extends State<MyRidesPage> {
       body: RefreshIndicator(
         onRefresh: _load,
         child: _loading
-            ? const ListView(children: [SizedBox(height: 300, child: Center(child: CircularProgressIndicator()))])
+            ? ListView(children: [SizedBox(height: 300, child: Center(child: CircularProgressIndicator()))])
             : _error != null
                 ? ListView(children: [
                     const SizedBox(height: 100),
@@ -124,7 +124,7 @@ class _MyRidesPageState extends State<MyRidesPage> {
                         physics: const AlwaysScrollableScrollPhysics(),
                         padding: const EdgeInsets.all(12),
                         itemCount: _rides.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 10),
+                        separatorBuilder: (context, index) => const SizedBox(height: 10),
                         itemBuilder: (context, index) {
                           final ride = _rides[index];
                           final status = ride['booking_status']?.toString() ?? 'UNKNOWN';
@@ -163,9 +163,9 @@ class _MyRidesPageState extends State<MyRidesPage> {
                                 Row(children: [
                                   const Icon(Icons.people_outline, size: 18),
                                   const SizedBox(width: 6),
-                                  Text((ride['passenger_count'] ?? 1).toString() + ' passenger(s)'),
+                                  Text("${ride['passenger_count'] ?? 1} passenger(s)"),
                                   const Spacer(),
-                                  Text(fareAmount == null ? 'Fare pending' : '₹' + fareAmount.toStringAsFixed(2), style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  Text(fareAmount == null ? 'Fare pending' : '₹${fareAmount.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold)),
                                 ]),
                                 if (canCancel) ...[
                                   const SizedBox(height: 8),
