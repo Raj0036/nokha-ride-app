@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -514,7 +516,7 @@ class _OwnerWorkspacePageState extends State<OwnerWorkspacePage> {
         .toList();
     String? selectedType = documentTypes.first;
     PlatformFile? selectedFile;
-    List<int>? selectedFileBytes;
+    Uint8List? selectedFileBytes;
     DateTime? expiresAt;
     String? formError;
 
@@ -956,6 +958,7 @@ class _DriverWorkspacePageState extends State<DriverWorkspacePage> {
     );
     if (file == null || !mounted) return;
     final fileLength = await file.length();
+    if (!mounted) return;
     if (fileLength == null || fileLength > 10 * 1024 * 1024) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Choose a readable PDF or image of 10 MB or smaller.')),
