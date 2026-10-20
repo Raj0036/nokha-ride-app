@@ -87,3 +87,21 @@ grant execute on function public.cleanup_vehicle_submission(uuid) to authenticat
 -- This bulk maintenance operation is for trusted maintenance only, not client RPC.
 revoke all on function public.process_expired_vehicle_documents() from public, anon, authenticated;
 grant execute on function public.process_expired_vehicle_documents() to service_role;
+
+-- These functions use schema-qualified application objects. Pinning their
+-- search path prevents caller-controlled object shadowing without changing
+-- their business logic or trigger behavior.
+alter function public.set_updated_at() set search_path = '';
+alter function public.generate_booking_number() set search_path = '';
+alter function public.validate_vehicle_model() set search_path = '';
+alter function public.vehicle_has_valid_required_documents(uuid) set search_path = '';
+alter function public.enforce_vehicle_availability_guard() set search_path = '';
+alter function public.enforce_vehicle_document_status() set search_path = '';
+alter function public.driver_has_valid_required_documents(uuid) set search_path = '';
+alter function public.enforce_driver_verification_guard() set search_path = '';
+alter function public.owner_kyc_has_valid_required_documents(uuid) set search_path = '';
+alter function public.enforce_owner_kyc_guard() set search_path = '';
+alter function public.validate_driver_vehicle_assignment() set search_path = '';
+alter function public.set_assignment_unassigned_at() set search_path = '';
+alter function public.validate_booking_assignment() set search_path = '';
+alter function public.validate_booking_status_transition() set search_path = '';
