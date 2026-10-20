@@ -224,8 +224,10 @@ class _BookingPageState extends State<BookingPage> {
         _fare = num.tryParse(fareValue ?? '');
       });
     } on FunctionException catch (e) {
-      if (mounted) setState(() => _error = _messageFrom(_asMap(e.details)) ??
-          'Fare quote failed. Please verify the addresses and try again.');
+      if (mounted) {
+        setState(() => _error = _messageFrom(_asMap(e.details)) ??
+            'Fare quote failed. Please verify the addresses and try again.');
+      }
     } catch (e) {
       if (mounted) {
         setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
@@ -286,8 +288,10 @@ class _BookingPageState extends State<BookingPage> {
       );
       if (mounted) Navigator.of(context).pop(true);
     } on FunctionException catch (e) {
-      if (mounted) setState(() => _error = _messageFrom(_asMap(e.details)) ??
-          'Booking could not be created. Your fare quote may have expired; request a new quote.');
+      if (mounted) {
+        setState(() => _error = _messageFrom(_asMap(e.details)) ??
+            'Booking could not be created. Your fare quote may have expired; request a new quote.');
+      }
     } catch (_) {
       if (mounted) {
         setState(() => _error = 'Booking could not be created. Please try again.');
