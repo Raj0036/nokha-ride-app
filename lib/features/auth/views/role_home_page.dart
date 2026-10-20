@@ -530,8 +530,16 @@ class _DriverWorkspacePageState extends State<DriverWorkspacePage> {
           .select('id, license_number, license_expiry, verification_status, online_status, rating_average, completed_rides')
           .eq('profile_id', user.id)
           .maybeSingle();
+      final expiryDate = DateTime.tryParse(row?['license_expiry']?.toString() ?? '');
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final normalizedExpiry = expiryDate == null
+          ? null
+          : DateTime(expiryDate.year, expiryDate.month, expiryDate.day);
       final isApproved =
-          row?['verification_status']?.toString().toUpperCase() == 'APPROVED';
+          row?['verification_status']?.toString().toUpperCase() == 'APPROVED' &&
+          normalizedExpiry != null &&
+          !normalizedExpiry.isBefore(today);
       final rides = isApproved
           ? await _supabase
               .from('bookings')
@@ -542,9 +550,7 @@ class _DriverWorkspacePageState extends State<DriverWorkspacePage> {
       if (!mounted) return;
       setState(() {
         _driver = row;
-        _approved = isApproved &&
-            (row?['license_expiry'] == null ||
-                DateTime.tryParse(row!['license_expiry'].toString())?.isBefore(DateTime.now()) == false);
+        _approved = isApproved;
         _online = row?['online_status'] == true;
         _assignedRides = List<Map<String, dynamic>>.from(rides);
         _loading = false;
