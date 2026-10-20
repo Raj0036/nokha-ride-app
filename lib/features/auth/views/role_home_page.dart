@@ -658,7 +658,7 @@ class _OwnerWorkspacePageState extends State<OwnerWorkspacePage> {
       };
       uploadedPath = '${user.id}/$vehicleId/${selectedType!.toLowerCase()}-${DateTime.now().millisecondsSinceEpoch}.$extension';
       await _supabase.storage.from('vehicle-documents').uploadBinary(
-        uploadedPath!,
+        uploadedPath,
         selectedFileBytes!,
         fileOptions: FileOptions(contentType: contentType, upsert: false),
       );
