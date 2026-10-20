@@ -27,4 +27,4 @@ GitHub Actions runs the Deno type-check for the MSG91 session function, Flutter 
 
 ## Existing backend schema
 
-The existing Supabase schema, RLS policies, migrations, and role-assignment trigger are preserved. No database migration is required for this widget integration. A new phone user is created only after MSG91 token verification, and the existing verified-user trigger assigns the `CUSTOMER` role. Existing accounts with another login method are not taken over by phone matching.
+The existing Supabase schema, RLS policies, migrations, and role-assignment trigger are preserved. The widget login function writes the verified phone into the existing profile row. No database migration is required for this widget integration. A new phone user is created only after MSG91 token verification, and the existing verified-user trigger assigns the `CUSTOMER` role. Existing accounts with another login method are not taken over by phone matching.
