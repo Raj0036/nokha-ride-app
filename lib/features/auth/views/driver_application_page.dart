@@ -120,20 +120,20 @@ class _DriverApplicationPageState extends State<DriverApplicationPage> {
     final user = _supabase.auth.currentUser;
     if (driver == null || user == null) return;
 
-    final result = await FilePicker.platform.pickFiles(
+    final file = await FilePicker.pickFile(
       type: FileType.custom,
       allowedExtensions: const ['pdf', 'jpg', 'jpeg', 'png'],
-      withData: true,
-      allowMultiple: false,
     );
-    if (result == null || result.files.isEmpty || !mounted) return;
-    final file = result.files.single;
-    if (file.size > 10 * 1024 * 1024 || file.bytes == null) {
+    if (file == null || !mounted) return;
+    final fileLength = await file.length();
+    if (fileLength == null || fileLength > 10 * 1024 * 1024) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Choose a readable PDF or image of 10 MB or smaller.')),
       );
       return;
     }
+    final fileBytes = await file.readAsBytes();
+    if (!mounted) return;
 
     setState(() {
       _saving = true;
@@ -151,7 +151,7 @@ class _DriverApplicationPageState extends State<DriverApplicationPage> {
       uploadedPath = '${user.id}/${driver['id']}/DL-${DateTime.now().millisecondsSinceEpoch}.$extension';
       await _supabase.storage.from('driver-documents').uploadBinary(
         uploadedPath,
-        file.bytes!,
+        fileBytes,
         fileOptions: FileOptions(contentType: contentType, upsert: false),
       );
       await _supabase.from('driver_documents').insert({
