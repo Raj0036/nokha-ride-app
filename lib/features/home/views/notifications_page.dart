@@ -70,7 +70,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
       body: RefreshIndicator(
         onRefresh: _load,
         child: _loading
-            ? const ListView(children: [SizedBox(height: 300, child: Center(child: CircularProgressIndicator()))])
+            ? ListView(children: [SizedBox(height: 300, child: Center(child: CircularProgressIndicator()))])
             : _error != null
                 ? ListView(children: [
                     const SizedBox(height: 100),
@@ -90,7 +90,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         physics: const AlwaysScrollableScrollPhysics(),
                         padding: const EdgeInsets.all(12),
                         itemCount: _items.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 8),
+                        separatorBuilder: (context, index) => const SizedBox(height: 8),
                         itemBuilder: (context, index) {
                           final item = _items[index];
                           final read = item['is_read'] == true;
