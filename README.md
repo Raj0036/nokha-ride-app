@@ -6,7 +6,7 @@ Nokha Ride is a Flutter app for local car ride booking in Nokha and nearby areas
 
 1. Install Flutter and Android Studio (Android SDK/emulator).
 2. Open this repository folder in VS Code. Install the recommended Dart and Flutter extensions when prompted.
-3. Copy `config/production.example.json` to `config/production.json` and replace the placeholders with the existing Supabase project URL and publishable key. Keep `config/production.json` local; it is ignored by Git.
+3. Copy `config/production.example.json` to `config/production.json` and replace only the two MSG91 Widget placeholders with your Widget ID and Widget Auth Token. Keep `config/production.json` local; it is ignored by Git.
 4. Use **Terminal → Run Task** to run:
    - `Nokha Ride: Get dependencies`
    - `Nokha Ride: Analyze`
