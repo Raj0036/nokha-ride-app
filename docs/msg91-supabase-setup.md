@@ -25,6 +25,13 @@ Copy `config/production.example.json` to `config/production.json` and fill in th
 
 Run/build with the existing VS Code task, which uses `--dart-define-from-file=config/production.json`.
 
+For the GitHub Actions QA APK to include the widget configuration, add these two **repository Actions secrets** under GitHub → Settings → Secrets and variables → Actions:
+
+- `MSG91_WIDGET_ID`
+- `MSG91_WIDGET_TOKEN`
+
+The QA workflow already supplies the existing public Supabase URL and publishable key. If the two MSG91 secrets are not configured, the APK still builds, but the phone OTP screen will show that MSG91 is not configured until you add the Widget ID and Widget Auth Token.
+
 ## 3. Deploy the session function
 
 The function is `supabase/functions/msg91-widget-session/index.ts`. It expects the existing server-side secret `MSG91_AUTH_KEY`. Supabase provides `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` to Edge Functions at runtime.
