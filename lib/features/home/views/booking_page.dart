@@ -203,10 +203,8 @@ class _BookingPageState extends State<BookingPage> {
           'service_area_id': _serviceAreaId,
           'vehicle_category_id': _category!.id,
           'booking_type': widget.bookingType,
-          'pickup_latitude': pickup.$1,
-          'pickup_longitude': pickup.$2,
-          'destination_latitude': destination.$1,
-          'destination_longitude': destination.$2,
+          'pickup': {'latitude': pickup.$1, 'longitude': pickup.$2},
+          'destination': {'latitude': destination.$1, 'longitude': destination.$2},
         },
       );
       final data = _asMap(response.data);
