@@ -576,14 +576,16 @@ class _DriverWorkspacePageState extends State<DriverWorkspacePage> {
       _error = null;
     });
     try {
-      final updated = await _supabase
-          .from('drivers')
-          .update({'online_status': value})
-          .eq('id', driver['id'])
-          .eq('profile_id', user.id)
-          .select('id, online_status')
-          .maybeSingle();
-      if (updated == null || updated['online_status'] != value) {
+      // The database intentionally blocks direct online_status writes.
+      // Use the trusted RPC so licence, approval, assigned vehicle, and
+      // active-ride constraints remain enforced server-side.
+      final response = await _supabase.rpc(
+        'set_driver_online_status',
+        params: {'p_online': value},
+      );
+      if (response is! Map ||
+          response['success'] != true ||
+          response['online_status'] != value) {
         throw StateError('Driver availability update was not confirmed by the server.');
       }
       if (!mounted) return;
@@ -591,6 +593,10 @@ class _DriverWorkspacePageState extends State<DriverWorkspacePage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(value ? 'You are now available.' : 'You are now offline.')),
       );
+    } on PostgrestException catch (error) {
+      if (mounted) {
+        setState(() => _error = error.message);
+      }
     } catch (_) {
       if (mounted) {
         setState(() => _error = 'Availability could not be updated. Please retry.');
