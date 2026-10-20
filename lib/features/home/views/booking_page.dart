@@ -227,7 +227,9 @@ class _BookingPageState extends State<BookingPage> {
       if (mounted) setState(() => _error = _messageFrom(_asMap(e.details)) ??
           'Fare quote failed. Please verify the addresses and try again.');
     } catch (e) {
-      if (mounted) setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+      if (mounted) {
+        setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -287,7 +289,9 @@ class _BookingPageState extends State<BookingPage> {
       if (mounted) setState(() => _error = _messageFrom(_asMap(e.details)) ??
           'Booking could not be created. Your fare quote may have expired; request a new quote.');
     } catch (_) {
-      if (mounted) setState(() => _error = 'Booking could not be created. Please try again.');
+      if (mounted) {
+        setState(() => _error = 'Booking could not be created. Please try again.');
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -352,7 +356,7 @@ class _BookingPageState extends State<BookingPage> {
                     Text('Journey details', style: Theme.of(context).textTheme.headlineSmall),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<VehicleCategory>(
-                      value: _category,
+                      initialValue: _category,
                       isExpanded: true,
                       decoration: const InputDecoration(
                         labelText: 'Vehicle type',
@@ -418,8 +422,7 @@ class _BookingPageState extends State<BookingPage> {
                           title: const Text('Pickup date and time'),
                           subtitle: Text(_scheduledAt == null
                               ? 'Choose when you need the ride'
-                              : MaterialLocalizations.of(context).formatFullDate(_scheduledAt!) +
-                                  ' · ' + TimeOfDay.fromDateTime(_scheduledAt!).format(context)),
+                              : '${MaterialLocalizations.of(context).formatFullDate(_scheduledAt!)} · ${TimeOfDay.fromDateTime(_scheduledAt!).format(context)}'),
                           trailing: const Icon(Icons.chevron_right),
                           onTap: _busy ? null : _pickSchedule,
                         ),
