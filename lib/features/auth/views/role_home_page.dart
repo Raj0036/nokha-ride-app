@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -248,6 +249,7 @@ class _OwnerWorkspacePageState extends State<OwnerWorkspacePage> {
   List<Map<String, dynamic>> _vehicles = const [];
   List<Map<String, dynamic>> _categories = const [];
   List<Map<String, dynamic>> _models = const [];
+  List<Map<String, dynamic>> _requiredDocuments = const [];
   bool _loading = true;
   bool _saving = false;
   bool _approved = false;
@@ -269,7 +271,7 @@ class _OwnerWorkspacePageState extends State<OwnerWorkspacePage> {
       final results = await Future.wait<dynamic>([
         _supabase
             .from('vehicles')
-            .select('id, registration_number, brand, model, verification_status, availability_status, is_active, vehicle_categories(name, is_bike, is_passenger_vehicle, is_active)')
+            .select('id, category_id, registration_number, brand, model, verification_status, availability_status, is_active, vehicle_categories(name, is_bike, is_passenger_vehicle, is_active)')
             .eq('owner_id', user.id)
             .order('created_at', ascending: false),
         _supabase.functions.invoke('owner-vehicle-catalog'),
@@ -277,11 +279,16 @@ class _OwnerWorkspacePageState extends State<OwnerWorkspacePage> {
       final vehicles = List<Map<String, dynamic>>.from(results[0] as List);
       final catalogResponse = results[1];
       final catalog = catalogResponse.data;
-      if (catalog is! Map || catalog['categories'] is! List || catalog['models'] is! List) {
+      if (catalog is! Map ||
+          catalog['categories'] is! List ||
+          catalog['models'] is! List ||
+          catalog['required_documents'] is! List) {
         throw StateError('Owner vehicle catalog response is invalid.');
       }
       final categories = List<Map<String, dynamic>>.from(catalog['categories'] as List);
       final models = List<Map<String, dynamic>>.from(catalog['models'] as List);
+      final requiredDocuments =
+          List<Map<String, dynamic>>.from(catalog['required_documents'] as List);
       final ownerApproved = vehicles.any((vehicle) {
         final category = vehicle['vehicle_categories'];
         return vehicle['verification_status']?.toString().toUpperCase() == 'APPROVED' &&
@@ -296,6 +303,7 @@ class _OwnerWorkspacePageState extends State<OwnerWorkspacePage> {
         _vehicles = vehicles;
         _categories = categories;
         _models = models;
+        _requiredDocuments = requiredDocuments;
         _approved = ownerApproved;
         _loading = false;
       });
@@ -480,6 +488,214 @@ class _OwnerWorkspacePageState extends State<OwnerWorkspacePage> {
     }
   }
 
+
+  Future<void> _uploadVehicleDocument(Map<String, dynamic> vehicle) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) return;
+
+    final vehicleId = vehicle['id'].toString();
+    final categoryId = vehicle['category_id']?.toString();
+    final requiredForVehicle = _requiredDocuments
+        .where((item) => item['vehicle_category_id'].toString() == categoryId)
+        .toList();
+    if (requiredForVehicle.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Required document rules are not configured for this vehicle category.')),
+      );
+      return;
+    }
+
+    final formKey = GlobalKey<FormState>();
+    final numberController = TextEditingController();
+    final documentTypes = requiredForVehicle
+        .map((item) => item['document_type'].toString())
+        .toSet()
+        .toList();
+    String? selectedType = documentTypes.first;
+    PlatformFile? selectedFile;
+    DateTime? expiresAt;
+    String? formError;
+
+    final submitted = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          final selectedRequirement = requiredForVehicle.firstWhere(
+            (item) => item['document_type'].toString() == selectedType,
+          );
+          final expiryRequired = selectedRequirement['expiry_required'] == true;
+          return AlertDialog(
+            title: const Text('Upload vehicle document'),
+            content: SizedBox(
+              width: 440,
+              child: SingleChildScrollView(
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      DropdownButtonFormField<String>(
+                        initialValue: selectedType,
+                        items: documentTypes.map((type) => DropdownMenuItem(
+                          value: type,
+                          child: Text(type.replaceAll('_', ' ')),
+                        )).toList(),
+                        onChanged: (value) => setDialogState(() {
+                          selectedType = value;
+                          formError = null;
+                        }),
+                        decoration: const InputDecoration(labelText: 'Document type'),
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: () async {
+                          final result = await FilePicker.platform.pickFiles(
+                            type: FileType.custom,
+                            allowedExtensions: const ['pdf', 'jpg', 'jpeg', 'png'],
+                            withData: true,
+                            allowMultiple: false,
+                          );
+                          if (result == null || result.files.isEmpty) return;
+                          final file = result.files.single;
+                          if (file.size > 10 * 1024 * 1024) {
+                            setDialogState(() => formError = 'File must be 10 MB or smaller.');
+                            return;
+                          }
+                          if (file.bytes == null) {
+                            setDialogState(() => formError = 'Could not read the selected file. Try another file.');
+                            return;
+                          }
+                          setDialogState(() {
+                            selectedFile = file;
+                            formError = null;
+                          });
+                        },
+                        icon: const Icon(Icons.attach_file),
+                        label: Text(selectedFile?.name ?? 'Choose PDF or image (max 10 MB)'),
+                      ),
+                      TextFormField(
+                        controller: numberController,
+                        decoration: const InputDecoration(labelText: 'Document number (optional)'),
+                      ),
+                      if (expiryRequired) ...[
+                        const SizedBox(height: 8),
+                        OutlinedButton.icon(
+                          onPressed: () async {
+                            final now = DateTime.now();
+                            final picked = await showDatePicker(
+                              context: context,
+                              initialDate: expiresAt ?? now.add(const Duration(days: 365)),
+                              firstDate: DateTime(now.year, now.month, now.day),
+                              lastDate: DateTime(now.year + 25),
+                            );
+                            if (picked != null) {
+                              setDialogState(() {
+                                expiresAt = picked;
+                                formError = null;
+                              });
+                            }
+                          },
+                          icon: const Icon(Icons.calendar_month),
+                          label: Text(expiresAt == null
+                              ? 'Select expiry date'
+                              : 'Expires \${expiresAt!.day.toString().padLeft(2, '0')}/\${expiresAt!.month.toString().padLeft(2, '0')}/\${expiresAt!.year}'),
+                        ),
+                      ],
+                      if (formError != null) ...[
+                        const SizedBox(height: 8),
+                        Text(formError!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                      ],
+                      const SizedBox(height: 8),
+                      const Text('Documents are private and will remain pending until an administrator verifies them.'),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () {
+                  if (!formKey.currentState!.validate()) return;
+                  if (selectedFile == null) {
+                    setDialogState(() => formError = 'Choose a file before submitting.');
+                    return;
+                  }
+                  if (expiryRequired && expiresAt == null) {
+                    setDialogState(() => formError = 'Select the document expiry date.');
+                    return;
+                  }
+                  Navigator.pop(dialogContext, true);
+                },
+                child: const Text('Upload document'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    if (submitted != true || selectedFile == null || selectedType == null) {
+      numberController.dispose();
+      return;
+    }
+
+    String? uploadedPath;
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      final file = selectedFile!;
+      final extension = (file.extension ?? 'bin').toLowerCase();
+      final contentType = switch (extension) {
+        'pdf' => 'application/pdf',
+        'jpg' || 'jpeg' => 'image/jpeg',
+        'png' => 'image/png',
+        _ => 'application/octet-stream',
+      };
+      uploadedPath = '\${user.id}/$vehicleId/\${selectedType!.toLowerCase()}-\${DateTime.now().millisecondsSinceEpoch}.$extension';
+      await _supabase.storage.from('vehicle-documents').uploadBinary(
+        uploadedPath!,
+        file.bytes!,
+        fileOptions: FileOptions(contentType: contentType, upsert: false),
+      );
+      await _supabase.from('vehicle_documents').insert({
+        'vehicle_id': vehicleId,
+        'document_type': selectedType,
+        'document_number': numberController.text.trim().isEmpty ? null : numberController.text.trim(),
+        'storage_path': uploadedPath,
+        'expires_at': expiresAt?.toIso8601String().split('T').first,
+      });
+      await _load();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Document uploaded for admin verification.')),
+        );
+      }
+    } catch (error) {
+      if (uploadedPath != null) {
+        try {
+          await _supabase.storage.from('vehicle-documents').remove([uploadedPath]);
+        } catch (_) {
+          // Keep the original error visible; the orphaned object can be cleaned up by admin.
+        }
+      }
+      if (mounted) {
+        setState(() => _error = error is PostgrestException
+            ? error.message
+            : 'Document upload failed. Check your connection and permissions.');
+      }
+    } finally {
+      numberController.dispose();
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
@@ -524,6 +740,11 @@ class _OwnerWorkspacePageState extends State<OwnerWorkspacePage> {
                   title: Text('${v['brand'] ?? ''} ${v['model'] ?? ''}'.trim().isEmpty ? v['registration_number'].toString() : '${v['brand'] ?? ''} ${v['model'] ?? ''}'),
                   subtitle: Text('${v['registration_number']} • ${(v['vehicle_categories'] as Map?)?['name'] ?? 'Vehicle'}\nVerification: ${v['verification_status']} • Availability: ${v['availability_status']}'),
                   isThreeLine: true,
+                  trailing: IconButton(
+                    tooltip: 'Upload required documents',
+                    onPressed: _saving ? null : () => _uploadVehicleDocument(v),
+                    icon: const Icon(Icons.upload_file_outlined),
+                  ),
                 ),
               )),
             ],
