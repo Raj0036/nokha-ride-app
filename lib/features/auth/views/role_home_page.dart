@@ -148,10 +148,10 @@ class _RoleHomePageState extends State<RoleHomePage> {
     }
 
     if (hasOwner) {
-      return OwnerWorkspacePage(approved: _ownerApproved);
+      return const OwnerWorkspacePage();
     }
     if (hasDriver) {
-      return DriverWorkspacePage(approved: _driverApproved);
+      return const DriverWorkspacePage();
     }
 
     return _message(
@@ -168,8 +168,8 @@ class _RoleHomePageState extends State<RoleHomePage> {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(
         builder: (_) => role == 'OWNER'
-            ? const OwnerWorkspacePage(approved: true)
-            : const DriverWorkspacePage(approved: true),
+            ? const OwnerWorkspacePage()
+            : const DriverWorkspacePage(),
       ),
     );
   }
@@ -237,8 +237,7 @@ class _RoleHomePageState extends State<RoleHomePage> {
 }
 
 class OwnerWorkspacePage extends StatefulWidget {
-  final bool approved;
-  const OwnerWorkspacePage({super.key, required this.approved});
+  const OwnerWorkspacePage({super.key});
 
   @override
   State<OwnerWorkspacePage> createState() => _OwnerWorkspacePageState();
@@ -495,8 +494,7 @@ class _OwnerWorkspacePageState extends State<OwnerWorkspacePage> {
 }
 
 class DriverWorkspacePage extends StatefulWidget {
-  final bool approved;
-  const DriverWorkspacePage({super.key, required this.approved});
+  const DriverWorkspacePage({super.key});
 
   @override
   State<DriverWorkspacePage> createState() => _DriverWorkspacePageState();
