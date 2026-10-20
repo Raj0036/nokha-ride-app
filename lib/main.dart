@@ -104,7 +104,7 @@ class _AuthGateState extends State<AuthGate> {
       return const LoginPage();
     }
 
-    if (!authViewModel.isEmailVerified) {
+    if (!authViewModel.isIdentityVerified) {
       return const LoginPage();
     }
 

@@ -32,6 +32,14 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Check MSG91 Widget Session Function
+        run: deno check supabase/functions/msg91-widget-session/index.ts
+
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -51,7 +59,17 @@ jobs:
         run: flutter test --reporter expanded
 
       - name: Build QA APK
-        run: flutter build apk --debug
+        env:
+          SUPABASE_URL: https://nmjqfjyoviohqykzyvsx.supabase.co
+          SUPABASE_PUBLISHABLE_KEY: sb_publishable_h0weGF9ieJdENo4n-K_bnw_QK6Axpsp
+          MSG91_WIDGET_ID: ${{ secrets.MSG91_WIDGET_ID }}
+          MSG91_WIDGET_TOKEN: ${{ secrets.MSG91_WIDGET_TOKEN }}
+        run: >-
+          flutter build apk --debug
+          --dart-define=SUPABASE_URL="$SUPABASE_URL"
+          --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY"
+          --dart-define=MSG91_WIDGET_ID="$MSG91_WIDGET_ID"
+          --dart-define=MSG91_WIDGET_TOKEN="$MSG91_WIDGET_TOKEN"
 
       - name: Upload QA APK
         if: success()
