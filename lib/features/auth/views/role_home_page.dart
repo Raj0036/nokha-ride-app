@@ -368,6 +368,7 @@ class _OwnerWorkspacePageState extends State<OwnerWorkspacePage> {
                     ),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
+                      key: ValueKey('vehicle-model-$categoryId'),
                       initialValue: modelId,
                       isExpanded: true,
                       items: _models
@@ -706,7 +707,7 @@ class _OwnerWorkspacePageState extends State<OwnerWorkspacePage> {
       ],
     ),
     floatingActionButton: FloatingActionButton.extended(
-      onPressed: _saving || _categories.isEmpty ? null : _registerVehicle,
+      onPressed: _saving || _categories.isEmpty || _models.isEmpty ? null : _registerVehicle,
       icon: const Icon(Icons.add),
       label: const Text('Add vehicle'),
     ),
