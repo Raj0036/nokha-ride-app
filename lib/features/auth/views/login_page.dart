@@ -66,17 +66,13 @@ class _LoginPageState extends State<LoginPage> {
       password: _passwordController.text,
     );
     if (!mounted) return;
-    if (success) {
-      if (viewModel.isEmailVerified) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const _LoginSuccessPage()),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please verify your email before continuing.')),
-        );
-      }
+    if (success && !viewModel.isEmailVerified) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please verify your email before continuing.')),
+      );
     }
+    // For verified users, AuthGate reacts to the updated auth state and opens
+    // the profile-completion or home flow. Do not push a placeholder route here.
   }
 
   @override
@@ -262,15 +258,3 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
-class _LoginSuccessPage extends StatelessWidget {
-  const _LoginSuccessPage();
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Nokha Ride')),
-      body: const Center(
-        child: Text('Login successful', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-      ),
-    );
-  }
-}
