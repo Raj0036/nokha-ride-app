@@ -177,14 +177,46 @@ class _RoleHomePageState extends State<RoleHomePage> {
     );
   }
 
-  void _openWorkspace(String role) {
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute<void>(
-        builder: (_) => role == 'OWNER'
-            ? const OwnerWorkspacePage()
-            : const DriverWorkspacePage(),
-      ),
-    );
+  Future<void> _openWorkspace(String role) async {
+    if (_loading) return;
+    if (role != 'OWNER' && role != 'DRIVER') return;
+
+    // Re-check approval on the trusted database function at the moment of
+    // switching. The client-side checks above are only for displaying UI.
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      final response = await _supabase.rpc(
+        'switch_owner_driver_role',
+        params: {'target_role': role},
+      );
+      if (response.toString().toUpperCase() != role) {
+        throw StateError('The server did not confirm the selected workspace.');
+      }
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute<void>(
+          builder: (_) => role == 'OWNER'
+              ? const OwnerWorkspacePage()
+              : const DriverWorkspacePage(),
+        ),
+      );
+    } on PostgrestException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = error.message;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = 'Workspace access could not be verified. Please retry.';
+      });
+    }
   }
 
   Widget _message({
