@@ -4,7 +4,9 @@ import 'package:provider/provider.dart';
 import '../viewmodels/profile_viewmodel.dart';
 
 class CompleteProfilePage extends StatefulWidget {
-  const CompleteProfilePage({super.key});
+  final bool popOnSuccess;
+
+  const CompleteProfilePage({super.key, this.popOnSuccess = false});
 
   @override
   State<CompleteProfilePage> createState() => _CompleteProfilePageState();
@@ -137,6 +139,9 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
           content: Text('Profile saved successfully.'),
         ),
       );
+      if (widget.popOnSuccess && mounted) {
+        Navigator.of(context).pop();
+      }
     }
   }
 

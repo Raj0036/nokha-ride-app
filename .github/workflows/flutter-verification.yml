@@ -40,6 +40,9 @@ jobs:
       - name: Check MSG91 Widget Session Function
         run: deno check supabase/functions/msg91-widget-session/index.ts
 
+      - name: Check Owner Vehicle Catalog Function
+        run: deno check supabase/functions/owner-vehicle-catalog/index.ts
+
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:

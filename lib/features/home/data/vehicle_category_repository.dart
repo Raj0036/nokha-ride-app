@@ -20,6 +20,7 @@ class SupabaseVehicleCategoryRepository
         .select()
         .eq('is_active', true)
         .eq('is_bike', false)
+        .eq('is_passenger_vehicle', true)
         .order('sort_order', ascending: true)
         .order('name', ascending: true);
 

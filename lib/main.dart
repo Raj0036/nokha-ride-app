@@ -7,7 +7,7 @@ import 'features/auth/viewmodels/auth_viewmodel.dart';
 import 'features/auth/viewmodels/profile_viewmodel.dart';
 import 'features/auth/views/complete_profile_page.dart';
 import 'features/auth/views/login_page.dart';
-import 'features/home/views/home_page.dart';
+import 'features/auth/views/role_home_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -165,7 +165,7 @@ class _AuthGateState extends State<AuthGate> {
     return ChangeNotifierProvider.value(
       value: _profileViewModel,
       child: _profileViewModel.isProfileComplete
-          ? const HomePage()
+          ? const RoleHomePage()
           : const CompleteProfilePage(),
     );
   }
